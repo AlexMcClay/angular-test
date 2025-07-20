@@ -1,9 +1,20 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable } from 'rxjs';
+import {
+  Firestore,
+  collection,
+  collectionData,
+  addDoc,
+  deleteDoc,
+  doc,
+  updateDoc,
+  getDoc,
+} from '@angular/fire/firestore';
+import { Observable, map } from 'rxjs';
 
 export interface Todo {
-  id: number;
-  text: string;
+  id: string;
+  title: string;
+  body: string;
   completed: boolean;
 }
 
@@ -11,51 +22,49 @@ export interface Todo {
   providedIn: 'root',
 })
 export class TodoService {
-  private STORAGE_KEY = 'todos';
-  private todosSubject = new BehaviorSubject<Todo[]>([]);
-  todos = this.todosSubject.asObservable();
+  private readonly collectionName = 'todos';
 
-  constructor() {
-    this.loadFromLocalStorage();
+  constructor(private firestore: Firestore) {}
+
+  getTodos(): Observable<Todo[]> {
+    const todosCollection = collection(this.firestore, this.collectionName);
+    return collectionData(todosCollection, { idField: 'id' }).pipe(
+      map((docs) => docs as Todo[])
+    );
   }
 
-  private loadFromLocalStorage(): void {
-    const storedTodos = localStorage.getItem(this.STORAGE_KEY);
-    if (storedTodos) {
-      this.todosSubject.next(JSON.parse(storedTodos));
+  async addTodo(title: string, body: string): Promise<void> {
+    const todosCollection = collection(this.firestore, this.collectionName);
+    await addDoc(todosCollection, {
+      title: title.trim(),
+      body: body.trim(),
+      completed: false,
+    });
+  }
+
+  async toggleTodo(id: string): Promise<void> {
+    const todoRef = doc(this.firestore, this.collectionName, id);
+    // First get the current todo to toggle its completed status
+    const todo = await this.getTodoById(id);
+    if (todo) {
+      await updateDoc(todoRef, {
+        completed: !todo.completed,
+      });
     }
   }
 
-  private saveToLocalStorage(todos: Todo[]): void {
-    localStorage.setItem(this.STORAGE_KEY, JSON.stringify(todos));
-    this.todosSubject.next(todos);
+  async deleteTodo(id: string): Promise<void> {
+    const todoRef = doc(this.firestore, this.collectionName, id);
+    await deleteDoc(todoRef);
   }
 
-  getTodos(): Observable<Todo[]> {
-    return this.todos;
-  }
-
-  addTodo(text: string): void {
-    const currentTodos = this.todosSubject.value;
-    const newTodo: Todo = {
-      id: Date.now(),
-      text: text.trim(),
-      completed: false,
-    };
-    this.saveToLocalStorage([...currentTodos, newTodo]);
-  }
-
-  toggleTodo(id: number): void {
-    const currentTodos = this.todosSubject.value;
-    const updatedTodos = currentTodos.map((todo) =>
-      todo.id === id ? { ...todo, completed: !todo.completed } : todo
-    );
-    this.saveToLocalStorage(updatedTodos);
-  }
-
-  deleteTodo(id: number): void {
-    const currentTodos = this.todosSubject.value;
-    const updatedTodos = currentTodos.filter((todo) => todo.id !== id);
-    this.saveToLocalStorage(updatedTodos);
+  private async getTodoById(id: string): Promise<Todo | null> {
+    const todoRef = doc(this.firestore, this.collectionName, id);
+    const snapshot = await getDoc(todoRef);
+    if (snapshot.exists()) {
+      const data = snapshot.data();
+      return { ...data, id: snapshot.id } as Todo;
+    }
+    return null;
   }
 }

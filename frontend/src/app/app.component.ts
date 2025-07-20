@@ -1,40 +1,25 @@
 import { Component, OnInit } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
-import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
-import { TodoService, Todo } from './todo.service';
+import { ThemeService } from './theme.service';
+import { HeaderComponent } from './header/header.component';
+import { TodoListComponent } from './todo/todo-list/todo-list.component';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet, FormsModule, CommonModule],
+  imports: [RouterOutlet, CommonModule, HeaderComponent, TodoListComponent],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss',
 })
 export class AppComponent implements OnInit {
-  newTodo: string = '';
-  todos: Todo[] = [];
+  isDarkMode: boolean = false;
 
-  constructor(private todoService: TodoService) {}
+  constructor(private themeService: ThemeService) {}
 
   ngOnInit() {
-    this.todoService.getTodos().subscribe((todos) => {
-      this.todos = todos;
+    this.themeService.getDarkMode().subscribe((isDark) => {
+      this.isDarkMode = isDark;
     });
-  }
-
-  addTodo() {
-    if (this.newTodo.trim()) {
-      this.todoService.addTodo(this.newTodo);
-      this.newTodo = '';
-    }
-  }
-
-  toggleTodo(todo: Todo) {
-    this.todoService.toggleTodo(todo.id);
-  }
-
-  deleteTodo(id: number) {
-    this.todoService.deleteTodo(id);
   }
 }

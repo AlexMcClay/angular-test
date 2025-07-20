@@ -1,31 +1,6 @@
-<div class="todo-container">
-  <h1>Todo List</h1>
-
-  <div class="add-todo">
-    <input
-      type="text"
-      [(ngModel)]="newTodo"
-      placeholder="Add a new todo..."
-      (keyup.enter)="addTodo()"
-    />
-    <button (click)="addTodo()">Add</button>
-  </div>
-
-  <div class="todo-list">
-    @for (todo of todos; track todo.id) {
-    <div class="todo-item" [class.completed]="todo.completed">
-      <div class="todo-content">
-        <input
-          type="checkbox"
-          [checked]="todo.completed"
-          (change)="toggleTodo(todo)"
-        />
-        <span>{{ todo.text }}</span>
-      </div>
-      <button class="delete-btn" (click)="deleteTodo(todo.id)">Delete</button>
-    </div>
-    }
-  </div>
+<div class="app-container" [class.dark-theme]="isDarkMode">
+  <app-header></app-header>
+  <app-todo-list></app-todo-list>
 </div>
 
 <router-outlet />
